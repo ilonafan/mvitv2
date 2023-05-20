@@ -623,7 +623,7 @@ class TrainMeter(object):
                     )
                 )
 
-    def log_iter_stats(self, cur_epoch, cur_iter):
+    def log_iter_stats(self, cur_epoch, cur_iter, output_dir):  # Fix: add argument `output_dir`
         """
         log the stats of the current iteration.
         Args:
@@ -658,9 +658,11 @@ class TrainMeter(object):
             loss_list = self.multi_loss.get_value()
             for idx, loss in enumerate(loss_list):
                 stats["loss_" + str(idx)] = loss
-        logging.log_json_stats(stats)
+                
+        # Fix output_dir None
+        logging.log_json_stats(stats, output_dir=output_dir)
 
-    def log_epoch_stats(self, cur_epoch):
+    def log_epoch_stats(self, cur_epoch, output_dir): #Fix: Add argument output_dir
         """
         Log the stats of the current epoch.
         Args:
@@ -695,7 +697,7 @@ class TrainMeter(object):
             avg_loss_list = self.multi_loss.get_global_avg()
             for idx, loss in enumerate(avg_loss_list):
                 stats["loss_" + str(idx)] = loss
-        logging.log_json_stats(stats, self.output_dir)
+        logging.log_json_stats(stats, output_dir=output_dir) #Fix self.output_dir as output_dir
 
 
 class ValMeter(object):
@@ -786,7 +788,7 @@ class ValMeter(object):
         self.all_preds.append(preds)
         self.all_labels.append(labels)
 
-    def log_iter_stats(self, cur_epoch, cur_iter):
+    def log_iter_stats(self, cur_epoch, cur_iter, output_dir):
         """
         log the stats of the current iteration.
         Args:
@@ -810,7 +812,7 @@ class ValMeter(object):
         if not self._cfg.DATA.MULTI_LABEL:
             stats["top1_err"] = self.mb_top1_err.get_win_median()
             stats["top5_err"] = self.mb_top5_err.get_win_median()
-        logging.log_json_stats(stats)
+        logging.log_json_stats(stats, output_dir)
 
     def log_epoch_stats(self, cur_epoch):
         """
