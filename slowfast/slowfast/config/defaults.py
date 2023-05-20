@@ -171,6 +171,8 @@ _C.TRAIN.MIXED_PRECISION = False
 # if True, inflate some params from imagenet model.
 _C.TRAIN.CHECKPOINT_IN_INIT = False
 
+_C.TRAIN.TRAIN_HEAD_ONLY = False
+
 # ---------------------------------------------------------------------------- #
 # Augmentation options.
 # ---------------------------------------------------------------------------- #
@@ -650,6 +652,9 @@ _C.SLOWFAST.FUSION_KERNEL_SZ = 5
 # Data options
 # -----------------------------------------------------------------------------
 _C.DATA = CfgNode()
+
+# Dataset name
+_C.DATA.DATASET = ""
 
 # The path to the data directory.
 _C.DATA.PATH_TO_DATA_DIR = ""
