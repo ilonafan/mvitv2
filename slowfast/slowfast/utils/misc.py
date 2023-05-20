@@ -193,8 +193,8 @@ def log_model_info(model, cfg, use_train_input=True):
             get_model_stats(model, cfg, "activation", use_train_input)
         )
     )
-    logger.info("nvidia-smi")
-    os.system("nvidia-smi")
+    # logger.info("nvidia-smi")
+    # os.system("nvidia-smi")
     return flops, params
 
 
