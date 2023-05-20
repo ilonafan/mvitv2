@@ -71,6 +71,7 @@ def train_epoch(
 
     if cfg.MODEL.FROZEN_BN:
         misc.frozen_bn_stats(model)
+        
     # Explicitly declare reduction to mean.
     loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(reduction="mean")
 
@@ -270,16 +271,16 @@ def train_epoch(
                     global_step=data_size * cur_epoch + cur_iter,
                 )
         train_meter.iter_toc()  # do measure allreduce for this meter
-        train_meter.log_iter_stats(cur_epoch, cur_iter)
+        train_meter.log_iter_stats(cur_epoch, cur_iter, cfg.OUTPUT_DIR)  #Fix: Add cfg.OUTPUT_DIR
         torch.cuda.synchronize()
         train_meter.iter_tic()
+    
     del inputs
 
     # in case of fragmented memory
     torch.cuda.empty_cache()
-
     # Log epoch stats.
-    train_meter.log_epoch_stats(cur_epoch)
+    train_meter.log_epoch_stats(cur_epoch, cfg.OUTPUT_DIR)
     train_meter.reset()
 
 
@@ -413,7 +414,7 @@ def eval_epoch(
 
             val_meter.update_predictions(preds, labels)
 
-        val_meter.log_iter_stats(cur_epoch, cur_iter)
+        val_meter.log_iter_stats(cur_epoch, cur_iter, cfg.OUTPUT_DIR)
         val_meter.iter_tic()
 
     # Log epoch stats.
@@ -462,6 +463,15 @@ def calculate_and_update_precise_bn(loader, model, num_iters=200, use_gpu=True):
     # Update the bn stats.
     update_bn_stats(model, _gen_loader(), num_iters)
 
+# Freeze backbone to train the head only
+def _freeze_except_head(model):
+    for param in model.parameters():
+        param.requires_grad = False
+        
+    for param in model.head.parameters():
+        param.requires_grad = True
+
+    
 
 def build_trainer(cfg):
     """
@@ -482,6 +492,7 @@ def build_trainer(cfg):
     """
     # Build the video model and print model statistics.
     model = build_model(cfg)
+    
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         flops, params = misc.log_model_info(model, cfg, use_train_input=True)
 
@@ -538,6 +549,15 @@ def train(cfg):
 
     # Build the video model and print model statistics.
     model = build_model(cfg)
+    
+    # Additional logger info for train head only
+    logger.info(f"Train head only: {cfg.TRAIN.TRAIN_HEAD_ONLY}")
+    
+    if cfg.TRAIN.TRAIN_HEAD_ONLY:
+        _freeze_except_head(model)
+        logger.info("Freeze model except the head.")
+    
+    logger.info("Model is built!")
     flops, params = 0.0, 0.0
     if du.is_master_proc() and cfg.LOG_MODEL_INFO:
         flops, params = misc.log_model_info(model, cfg, use_train_input=True)
@@ -546,6 +566,7 @@ def train(cfg):
     optimizer = optim.construct_optimizer(model, cfg)
     # Create a GradScaler for mixed precision training
     scaler = torch.cuda.amp.GradScaler(enabled=cfg.TRAIN.MIXED_PRECISION)
+    logger.info("Optimizer and scaler is built!")
 
     # Load a checkpoint to resume training if applicable.
     if cfg.TRAIN.AUTO_RESUME and cu.has_checkpoint(cfg.OUTPUT_DIR):
