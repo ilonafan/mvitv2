@@ -7,6 +7,7 @@ import numpy as np
 import os
 import pickle
 import torch
+import csv
 
 import slowfast.utils.checkpoint as cu
 import slowfast.utils.distributed as du
@@ -115,6 +116,8 @@ def perform_test(test_loader, model, test_meter, cfg, writer=None):
                 yd_transform.view(batchSize, -1, 1),
             )
             preds = torch.sum(probs, 1)
+        elif cfg.MODEL.MODEL_NAME == 'MVIT_PNP':
+            preds = model(inputs)['logits']    
         else:
             # Perform the forward pass.
             preds = model(inputs)
@@ -127,8 +130,18 @@ def perform_test(test_loader, model, test_meter, cfg, writer=None):
             video_idx = video_idx.cpu()
 
         test_meter.iter_toc()
-
-        if not cfg.VIS_MASK.ENABLE:
+        
+        
+        # Visualize the resultant embeddings with t-sne 
+        if cfg.TASK == 'TSNE':
+            # Update and log embeddings.
+            test_meter.update_embeddings(
+                preds.detach(), labels.detach(), video_idx.detach()
+            )
+            # print("preds shape", preds.shape)
+            # print("labels shape", labels.shape)
+            # print("video_idx shape", video_idx.shape) 
+        elif not cfg.VIS_MASK.ENABLE:
             # Update and log stats.
             test_meter.update_stats(
                 preds.detach(), labels.detach(), video_idx.detach()
@@ -137,8 +150,36 @@ def perform_test(test_loader, model, test_meter, cfg, writer=None):
 
         test_meter.iter_tic()
 
+    if cfg.TASK == 'TSNE':
+            all_embeddings = test_meter.embeddings.clone().detach()
+            all_labels = test_meter.video_labels
+            
+            if cfg.NUM_GPUS:
+                all_embeddings = all_embeddings.cpu()
+                all_labels = all_labels.cpu()
+
+            if cfg.TEST.SAVE_RESULTS_PATH != "":
+                save_path = os.path.join(cfg.OUTPUT_DIR, cfg.TEST.SAVE_RESULTS_PATH)
+
+            if du.is_root_proc():
+                print('embedding shape is: ', all_embeddings.shape)
+                print('labels shape is: ', all_labels.shape)
+                # res = torch.cat((all_embeddings, all_labels), 1)
+                res = torch.hstack((all_embeddings, all_labels.unsqueeze(1)))
+                print('res shape is: ', res.shape)
+                emb_list = res.tolist()
+                print('list length is: ', len(emb_list))
+
+                with open(save_path, 'w', newline='') as file:
+                    writer = csv.writer(file)
+                    for emb in emb_list:
+                        writer.writerow(emb)
+            logger.info(
+                "Successfully saved resultant embeddings to {}".format(save_path)
+            )   
+
     # Log epoch stats and print the final testing results.
-    if not cfg.DETECTION.ENABLE:
+    elif not cfg.DETECTION.ENABLE:    
         all_preds = test_meter.video_preds.clone().detach()
         all_labels = test_meter.video_labels
         if cfg.NUM_GPUS:
@@ -157,8 +198,8 @@ def perform_test(test_loader, model, test_meter, cfg, writer=None):
             logger.info(
                 "Successfully saved prediction results to {}".format(save_path)
             )
-
-    test_meter.finalize_metrics()
+            
+        test_meter.finalize_metrics()
     return test_meter
 
 
