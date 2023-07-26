@@ -401,6 +401,24 @@ _C.MODEL.NUM_CLASSES = 400
 # Loss function.
 _C.MODEL.LOSS_FUNC = "cross_entropy"
 
+# Select pnp mode (soft or hard).
+_C.MODEL.WEIGHTING = 'soft'
+
+# Select auxiliary function
+_C.MODEL.LOSS_FUNC_AUX = 'mae'
+
+# Weights of auxiliary loss and consistency loss
+_C.MODEL.ALPHA = 1.0
+_C.MODEL.GAMMA = 1.0
+_C.MODEL.OMEGA = 0.1
+
+# Subtract loss of ood from consistency loss
+_C.MODEL.NEG_CONS = True
+
+#Hyperparameter of early learning regularization method
+_C.MODEL.LAM = 3
+_C.MODEL.BETA = 0.7
+
 # Model architectures that has one single pathway.
 _C.MODEL.SINGLE_PATHWAY_ARCH = [
     "2d",
@@ -409,6 +427,7 @@ _C.MODEL.SINGLE_PATHWAY_ARCH = [
     "slow",
     "x3d",
     "mvit",
+    'mvit_pnp',
     "maskmvit",
 ]
 
@@ -440,6 +459,22 @@ _C.MODEL.FROZEN_BN = False
 # If True, AllReduce gradients are compressed to fp16
 _C.MODEL.FP16_ALLREDUCE = False
 
+# -----------------------------------------------------------------------------
+# Early Learning Regilarization Plus options
+# -----------------------------------------------------------------------------
+# Hyperparameter for mixup augmentation
+_C.ELR_PLUS = CfgNode()
+
+_C.ELR_PLUS.ALPHA = 1.0
+
+# Hyperparameter for weight averaging
+_C.ELR_PLUS.GAMMA = 0.997
+
+# Hyperparameter for temporal ensembling
+_C.ELR_PLUS.BETA = 0.7
+
+# Hyperparameter for regularization
+_C.ELR_PLUS.LAM = 3
 
 # -----------------------------------------------------------------------------
 # MViT options
@@ -557,6 +592,123 @@ _C.MVIT.USE_MEAN_POOLING = False
 # If True, use frozen sin cos positional embedding.
 _C.MVIT.USE_FIXED_SINCOS_POS = False
 
+
+# -----------------------------------------------------------------------------
+# MViT_PNP options
+# -----------------------------------------------------------------------------
+_C.MVIT_PNP = CfgNode()
+
+# Options include `conv`, `max`.
+_C.MVIT_PNP.MODE = "conv"
+
+# If True, perform pool before projection in attention.
+_C.MVIT_PNP.POOL_FIRST = False
+
+# If True, use cls embed in the network, otherwise don't use cls_embed in transformer.
+_C.MVIT_PNP.CLS_EMBED_ON = True
+
+# Kernel size for patchtification.
+_C.MVIT_PNP.PATCH_KERNEL = [3, 7, 7]
+
+# Stride size for patchtification.
+_C.MVIT_PNP.PATCH_STRIDE = [2, 4, 4]
+
+# Padding size for patchtification.
+_C.MVIT_PNP.PATCH_PADDING = [2, 4, 4]
+
+# If True, use 2d patch, otherwise use 3d patch.
+_C.MVIT_PNP.PATCH_2D = False
+
+# Base embedding dimension for the transformer.
+_C.MVIT_PNP.EMBED_DIM = 96
+
+# Base num of heads for the transformer.
+_C.MVIT_PNP.NUM_HEADS = 1
+
+# Dimension reduction ratio for the MLP layers.
+_C.MVIT_PNP.MLP_RATIO = 4.0
+
+# If use, use bias term in attention fc layers.
+_C.MVIT_PNP.QKV_BIAS = True
+
+# Drop path rate for the tranfomer.
+_C.MVIT_PNP.DROPPATH_RATE = 0.1
+
+# The initial value of layer scale gamma. Set 0.0 to disable layer scale.
+_C.MVIT_PNP.LAYER_SCALE_INIT_VALUE = 0.0
+
+# Depth of the transformer.
+_C.MVIT_PNP.DEPTH = 16
+
+# Normalization layer for the transformer. Only layernorm is supported now.
+_C.MVIT_PNP.NORM = "layernorm"
+
+# Dimension multiplication at layer i. If 2.0 is used, then the next block will increase
+# the dimension by 2 times. Format: [depth_i: mul_dim_ratio]
+_C.MVIT_PNP.DIM_MUL = []
+
+# Head number multiplication at layer i. If 2.0 is used, then the next block will
+# increase the number of heads by 2 times. Format: [depth_i: head_mul_ratio]
+_C.MVIT_PNP.HEAD_MUL = []
+
+# Stride size for the Pool KV at layer i.
+# Format: [[i, stride_t_i, stride_h_i, stride_w_i], ...,]
+_C.MVIT_PNP.POOL_KV_STRIDE = []
+
+# Initial stride size for KV at layer 1. The stride size will be further reduced with
+# the raio of MVIT.DIM_MUL. If will overwrite MVIT.POOL_KV_STRIDE if not None.
+_C.MVIT_PNP.POOL_KV_STRIDE_ADAPTIVE = None
+
+# Stride size for the Pool Q at layer i.
+# Format: [[i, stride_t_i, stride_h_i, stride_w_i], ...,]
+_C.MVIT_PNP.POOL_Q_STRIDE = []
+
+# If not None, overwrite the KV_KERNEL and Q_KERNEL size with POOL_KVQ_CONV_SIZ.
+# Otherwise the kernel_size is [s + 1 if s > 1 else s for s in stride_size].
+_C.MVIT_PNP.POOL_KVQ_KERNEL = None
+
+# If True, perform no decay on positional embedding and cls embedding.
+_C.MVIT_PNP.ZERO_DECAY_POS_CLS = True
+
+# If True, use norm after stem.
+_C.MVIT_PNP.NORM_STEM = False
+
+# If True, perform separate positional embedding.
+_C.MVIT_PNP.SEP_POS_EMBED = False
+
+# Dropout rate for the MViT backbone.
+_C.MVIT_PNP.DROPOUT_RATE = 0.0
+
+# If True, use absolute positional embedding.
+_C.MVIT_PNP.USE_ABS_POS = True
+
+# If True, use relative positional embedding for spatial dimentions
+_C.MVIT_PNP.REL_POS_SPATIAL = False
+
+# If True, use relative positional embedding for temporal dimentions
+_C.MVIT_PNP.REL_POS_TEMPORAL = False
+
+# If True, init rel with zero
+_C.MVIT_PNP.REL_POS_ZERO_INIT = False
+
+# If True, using Residual Pooling connection
+_C.MVIT_PNP.RESIDUAL_POOLING = False
+
+# Dim mul in qkv linear layers of attention block instead of MLP
+_C.MVIT_PNP.DIM_MUL_IN_ATT = False
+
+# If True, using separate linear layers for Q, K, V in attention blocks.
+_C.MVIT_PNP.SEPARATE_QKV = False
+
+# The initialization scale factor for the head parameters.
+_C.MVIT_PNP.HEAD_INIT_SCALE = 1.0
+
+# Whether to use the mean pooling of all patch tokens as the output.
+_C.MVIT_PNP.USE_MEAN_POOLING = False
+
+# If True, use frozen sin cos positional embedding.
+_C.MVIT_PNP.USE_FIXED_SINCOS_POS = False
+
 # -----------------------------------------------------------------------------
 # Masked pretraining options
 # -----------------------------------------------------------------------------
@@ -626,6 +778,26 @@ _C.MVIT.REV.RES_PATH = "conv"
 
 # Method to merge hidden states before Qpoolinglayers
 _C.MVIT.REV.PRE_Q_FUSION = "avg"
+
+# Reversible Configs
+_C.MVIT_PNP.REV = CfgNode()
+
+# Enable Reversible Model
+_C.MVIT_PNP.REV.ENABLE = False
+
+# Method to fuse the reversible paths
+# see :class: `TwoStreamFusion` for all the options
+_C.MVIT_PNP.REV.RESPATH_FUSE = "concat"
+
+# Layers to buffer activations at
+# (at least Q-pooling layers needed)
+_C.MVIT_PNP.REV.BUFFER_LAYERS = []
+
+# 'conv' or 'max' operator for the respath in Qpooling
+_C.MVIT_PNP.REV.RES_PATH = "conv"
+
+# Method to merge hidden states before Qpoolinglayers
+_C.MVIT_PNP.REV.PRE_Q_FUSION = "avg"
 
 # -----------------------------------------------------------------------------
 # SlowFast options
