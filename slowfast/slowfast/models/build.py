@@ -42,6 +42,10 @@ def build_model(cfg, gpu_id=None):
     # Construct the model
     name = cfg.MODEL.MODEL_NAME
     model = MODEL_REGISTRY.get(name)(cfg)
+    
+    if cfg.TRAIN.TRAIN_HEAD_ONLY:
+        freeze_except_head(cfg, model)
+        logger.info("Freeze model except the head.")
 
     if cfg.BN.NORM_TYPE == "sync_batchnorm_apex":
         try:
@@ -82,3 +86,17 @@ def build_model(cfg, gpu_id=None):
                 state=None, hook=comm_hooks_default.fp16_compress_hook
             )
     return model
+
+
+# Freeze backbone to train the head only
+def freeze_except_head(cfg, model):
+    for param in model.parameters():
+        param.requires_grad = False
+    if cfg.MODEL.MODEL_NAME == 'MVIT_PNP':
+        for param in model.classifier_head.parameters():
+            param.requires_grad = True
+        for param in model.proba_head.parameters():
+            param.requires_grad = True
+    else:   
+        for param in model.head.parameters():
+            param.requires_grad = True
