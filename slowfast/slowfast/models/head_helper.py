@@ -688,3 +688,98 @@ class MSSeparateHead(nn.Module):
             x = self.projections[idx](x)
             model_outputs.append(x)
         return model_outputs
+
+
+
+class NPNHead(nn.Module):
+    """
+    BasicHead. No pool.
+    """
+
+    def __init__(
+        self,
+        dim_in,
+        mlp_scale_factor=1.0,
+        dropout_rate=0.0,
+        act_func="softmax",
+    ):
+        """
+        Perform linear projection and activation as head for Noise Predictor Network.
+        Args:
+            dim_in (int): the channel dimension of the input to the head.
+            mlp_scale_factor (float): the scalr factor of hidden layer
+            dropout_rate (float): dropout rate. If equal to 0.0, perform no
+                dropout.
+            act_func (string): activation function to use. 'softmax': applies
+                softmax on the output. 'sigmoid': applies sigmoid on the output.
+        """
+        super(NPNHead, self).__init__()
+        if dropout_rate > 0.0:
+            self.dropout = nn.Dropout(dropout_rate)
+        
+        mlp_hidden_size = round(mlp_scale_factor * dim_in)
+        # self.projection = nn.Linear(dim_in, mlp_hidden_size, bias=True)
+        # self.projection = MLPHead(
+        #     dim_in,
+        #     3,       #dim_out
+        #     mlp_hidden_size,       #mlp_dim
+        #     1,       #num_layers
+        #     True,    #bn_on
+        #     True,    #bias
+        #     False,   #flatten
+        #     True,    #xavier_init
+        #     1,       #bn_sync_num
+        #     False,   #global_sync
+        # )
+        
+        self.projection = nn.Sequential(
+            nn.Linear(dim_in, mlp_hidden_size, bias=True),
+            nn.BatchNorm1d(mlp_hidden_size),
+            nn.ReLU(inplace=True),
+            nn.Linear(mlp_hidden_size, 3),
+            nn.Sigmoid()
+        )
+
+        # Softmax for evaluation and testing.
+        if act_func == "softmax":
+            self.act = nn.Softmax(dim=1)
+        elif act_func == "sigmoid":
+            self.act = nn.Sigmoid()
+        elif act_func == "none":
+            self.act = None
+        else:
+            raise NotImplementedError(
+                "{} is not supported as an activation"
+                "function.".format(act_func)
+            )
+        
+        # self.apply(self._init_weights) 
+    
+    def _init_weights(self, init_method='Xavier'):
+        module = self.projection
+        for _, m in module.named_modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+                if init_method == 'He':
+                    nn.init.kaiming_normal_(m.weight.data)
+                elif init_method == 'Xavier':
+                    nn.init.xavier_normal_(m.weight.data)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias.data, val=0)
+    
+    def forward(self, x):
+        if hasattr(self, "dropout"):
+            x = self.dropout(x)
+        x = self.projection(x)
+        
+        # print("The shape of output of prob_head is:", x.shape)
+
+        if not self.training:
+            if self.act is not None:
+                x = self.act(x)
+            # Performs fully convolutional inference.
+            if x.ndim == 5 and x.shape[1:4] > torch.Size([1, 1, 1]):
+                x = x.mean([1, 2, 3])
+            # x = x.view(x.shape[0], -1)
+        return x
+    
+    
