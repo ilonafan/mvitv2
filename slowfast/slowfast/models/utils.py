@@ -223,3 +223,57 @@ def calc_mvit_feature_geometry(cfg):
                     feat_size[i][j] = feat_size[i][j] // x[j + 1]
                     feat_stride[i][j] = feat_stride[i][j] * x[j + 1]
     return feat_size, feat_stride
+
+def calc_mvit_pnp_feature_geometry(cfg):
+    feat_size = [
+        [
+            cfg.DATA.NUM_FRAMES // cfg.MVIT_PNP.PATCH_STRIDE[0]
+            if len(cfg.MVIT_PNP.PATCH_STRIDE) > 2
+            else 1,
+            cfg.DATA.TRAIN_CROP_SIZE // cfg.MVIT_PNP.PATCH_STRIDE[-2],
+            cfg.DATA.TRAIN_CROP_SIZE // cfg.MVIT_PNP.PATCH_STRIDE[-1],
+        ]
+        for i in range(cfg.MVIT_PNP.DEPTH)
+    ]
+    feat_stride = [
+        [
+            cfg.MVIT_PNP.PATCH_STRIDE[0] if len(cfg.MVIT_PNP.PATCH_STRIDE) > 2 else 1,
+            cfg.MVIT_PNP.PATCH_STRIDE[-2],
+            cfg.MVIT_PNP.PATCH_STRIDE[-1],
+        ]
+        for i in range(cfg.MVIT_PNP.DEPTH)
+    ]
+    for _, x in enumerate(cfg.MVIT_PNP.POOL_Q_STRIDE):
+        for i in range(cfg.MVIT_PNP.DEPTH):
+            if i >= x[0]:
+                for j in range(len(feat_size[i])):
+                    feat_size[i][j] = feat_size[i][j] // x[j + 1]
+                    feat_stride[i][j] = feat_stride[i][j] * x[j + 1]
+    return feat_size, feat_stride
+
+def mixup_data(x, y, alpha=1.0, device='cuda'):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    lam = np.random.beta(alpha, alpha)
+    lam = max(lam, 1-lam)
+    batch_size = x.size()[0]
+    mix_index = torch.randperm(batch_size).to(device)  # Return a random permutation of (0, N-1)
+
+    mixed_x = lam * x + (1 - lam) * x[mix_index, :]
+    mixed_y = lam * y + (1 - lam) * y[mix_index, :]
+
+    return mixed_x, mixed_y, lam, mix_index
+
+# def mixup_criterion(self, pred, y_a, y_b, lam, *args):
+#     loss_a, prob_a, entropy_a= self.train_criterion(pred, y_a, *args)
+#     loss_b, porb_b, entropy_b = self.train_criterion(pred, y_b, *args)
+#     return lam * loss_a + (1 - lam) * loss_b, lam * prob_a + (1-lam) * porb_b, lam * entropy_a + (1-lam) * entropy_b
+
+def update_ema_variables(model, train_meter, global_step, gamma=0.997):
+    # Use the true average until the exponential average is more correct
+    if gamma != 0:
+        # if self.config['ema_update']:
+        #     alpha = sigmoid_rampup(global_step + 1, self.config['ema_step'])*alpha_
+        gamma = min(1 - 1 / (global_step + 1), gamma)
+        for ema_param, param in zip(train_meter.model_ema.parameters(), model.parameters()):
+            # ema_param.data.mul_(gamma).add_(1 - gamma, param.data)
+            ema_param.data.mul_(gamma).add_(param.data, alpha=1 - gamma)
