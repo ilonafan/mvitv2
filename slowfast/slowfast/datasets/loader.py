@@ -16,6 +16,8 @@ from slowfast.datasets.multigrid_helper import ShortCycleBatchSampler
 
 from . import utils as utils
 from .build import build_dataset
+from .transform import build_transform
+from .transform import CLDataTransform
 
 
 def multiple_samples_collate(batch, fold=False):
@@ -111,7 +113,14 @@ def construct_loader(cfg, split, is_precise_bn=False):
         drop_last = False
 
     # Construct the dataset
-    dataset = build_dataset(dataset_name, cfg, split)
+    if dataset_name == 'pnp' and split == 'train':
+        transform = build_transform()
+        dataset = build_dataset(dataset_name, cfg, split, CLDataTransform(transform['train'], transform['train_strong_aug']))
+    elif dataset_name == 'pnp':
+        transform = build_transform()
+        dataset = build_dataset(dataset_name, cfg, split, transform['test'])
+    else:
+        dataset = build_dataset(dataset_name, cfg, split, transform=None)
 
     if isinstance(dataset, torch.utils.data.IterableDataset):
         loader = torch.utils.data.DataLoader(

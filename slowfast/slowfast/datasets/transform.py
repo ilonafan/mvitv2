@@ -16,6 +16,7 @@ from torchvision import transforms
 
 from .rand_augment import rand_augment_transform
 from .random_erasing import RandomErasing
+from randaugment import RandAugment
 
 _pil_interpolation_to_str = {
     Image.NEAREST: "PIL.Image.NEAREST",
@@ -1214,3 +1215,44 @@ class GaussianBlurVideo(object):
         frames = gaussian_filter(frames, sigma=(0.0, sigma_t, sigma_y, sigma_x))
         frames = torch.from_numpy(frames)
         return frames
+
+
+def build_transform(rescale_size=256, crop_size=224):
+    train_transform = tv.transforms.Compose([
+        tv.transforms.ToPILImage(),
+        tv.transforms.Resize(size=rescale_size),
+        tv.transforms.RandomHorizontalFlip(),
+        tv.transforms.RandomCrop(size=crop_size),
+        tv.transforms.ToTensor(),
+        # tv.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    ])
+    test_transform = tv.transforms.Compose([
+        tv.transforms.ToPILImage(),
+        tv.transforms.Resize(size=rescale_size),
+        tv.transforms.CenterCrop(size=crop_size),
+        tv.transforms.ToTensor(),
+        # tv.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    ])
+    train_transform_strong_aug = tv.transforms.Compose([
+        tv.transforms.ToPILImage(),
+        tv.transforms.Resize(size=rescale_size),
+        tv.transforms.RandomHorizontalFlip(),
+        tv.transforms.RandomCrop(size=crop_size),
+        # RandAugment(),
+        tv.transforms.RandAugment(),
+        tv.transforms.ToTensor(),
+        # tv.transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    ])
+    return {'train': train_transform, 'test': test_transform, 'train_strong_aug': train_transform_strong_aug}
+
+
+class CLDataTransform(object):
+    def __init__(self, transform_weak, transform_strong):
+        self.transform_weak = transform_weak
+        self.transform_strong = transform_strong
+
+    def __call__(self, sample):
+        x_w1 = self.transform_weak(sample)
+        x_w2 = self.transform_weak(sample)
+        x_s = self.transform_strong(sample)
+        return x_w1, x_w2, x_s
