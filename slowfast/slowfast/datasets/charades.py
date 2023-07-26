@@ -28,7 +28,7 @@ class Charades(torch.utils.data.Dataset):
     height is larger than the width.
     """
 
-    def __init__(self, cfg, mode, num_retries=10):
+    def __init__(self, cfg, mode, transform=None, num_retries=10):
         """
         Load Charades data (frame paths, labels, etc. ) to a given Dataset object.
         The dataset could be downloaded from Chrades official website

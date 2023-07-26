@@ -20,7 +20,7 @@ class Ava(torch.utils.data.Dataset):
     AVA Dataset
     """
 
-    def __init__(self, cfg, split):
+    def __init__(self, cfg, split, transform=None):
         self.cfg = cfg
         self._split = split
         self._sample_rate = cfg.DATA.SAMPLING_RATE

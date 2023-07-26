@@ -27,7 +27,7 @@ logger = logging.get_logger(__name__)
 class Imagenet(torch.utils.data.Dataset):
     """ImageNet dataset."""
 
-    def __init__(self, cfg, mode, num_retries=10):
+    def __init__(self, cfg, mode, transform=None, num_retries=10):
         self.num_retries = num_retries
         self.cfg = cfg
         self.mode = mode

@@ -30,7 +30,7 @@ class Ssv2(torch.utils.data.Dataset):
     bottom crop if the height is larger than the width.
     """
 
-    def __init__(self, cfg, mode, num_retries=10):
+    def __init__(self, cfg, mode, transform=None, num_retries=10):
         """
         Load Something-Something V2 data (frame paths, labels, etc. ) to a given
         Dataset object. The dataset could be downloaded from Something-Something
