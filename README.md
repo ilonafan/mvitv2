@@ -21,7 +21,9 @@ Please find installation instructions for PyTorch and PySlowFast in [INSTALL.md]
 
 We verify the effectiveness of the PNP method and Robust Early-Learning method on simulated noisy datasets. 
 
-In this repository, we provide the used labels in different protions. You should also download the NTU60 dataset and put them into the same folder of labels as the instructions in [DATASET.md](slowfast/datasets/DATASET.md).
+In this repository, we provide the subset we used for this project. You should download the NTU60 dataset and create the subset according to the csv files. The dataset should be put into the same folder of labels as the instructions in [DATASET.md](slowfast/datasets/DATASET.md).
+
+To generate noise labels, you can run the [generate_noisy_label.ipynb](slowfast/script/generate_noisy_label.ipynb) in the script folder with any noise proportion.
 
 
 Here is a training example: 
@@ -48,5 +50,5 @@ python tools/run_net.py \
   Task T-SNE\
 ```
 
-Then you can run the script in "visualization" folder to visualiza them in 2d or 3D via t-SNE.
+Then you can run the [tsne.ipynb](slowfast/script/tsne.ipynb) to visualiza them in 2d or 3D via t-SNE.
 
