@@ -1,6 +1,6 @@
 # Action Recognition with Noisy Labels
 
-This is the repository for the CV:HCI practical course with topic: Action Recognition with Noisy Labels. In this repository, you can find the implementation for this project with respect to MViTv2 model. 
+This is the repository for the CV:HCI practical course with topic "**Action Recognition with Noisy Labels**". In this repository, you can find the implementation based on [MViTv2](https://github.com/facebookresearch/SlowFast) model. 
 
 ## Dependencies
 
@@ -38,7 +38,7 @@ To perform test, you can set the TRAIN.ENABLE to False, and do not forget to pas
 
 ## Visualization
 
-To visualize the resultant embeddings of your model, you can first perform test and set the Task as t-sne and save the output csv file.
+To visualize the resultant embeddings of your model, you can first perform test and set the TASK to TSNE and save the output csv file.
 
 Here is an example: 
 ```bash
@@ -47,8 +47,8 @@ python tools/run_net.py \
   DATA.PATH_TO_DATA_DIR path_to_your_dataset \
   TEST.CHECKPOINT_FILE_PATH path_to_your_checkpoint \
   TRAIN.ENABLE False \
-  Task T-SNE\
+  TASK T-SNE\
 ```
 
-Then you can run the [tsne.ipynb](slowfast/script/tsne.ipynb) to visualiza them in 2d or 3D via t-SNE.
+Then you can run the [tsne.ipynb](slowfast/script/tsne.ipynb) to visualiza them in 2D or 3D via t-SNE.
 
