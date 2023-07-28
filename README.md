@@ -1,6 +1,6 @@
 # Action Recognition with Noisy Labels
 
-This is the code for the CV:HCI practical course with topic: Action Recognition with Noisy Labels
+This is the repository for the CV:HCI practical course with topic: Action Recognition with Noisy Labels. In this repository, you can find the implementation for this project with respect to MViTv2 model. 
 
 ## Dependencies
 
